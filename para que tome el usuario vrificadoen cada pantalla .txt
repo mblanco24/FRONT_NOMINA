@@ -1,0 +1,6 @@
+Obtener usuario autenticado
+En cualquier parte de tu aplicación:
+
+$user = auth()->user();
+// o
+$user = Auth::user();
