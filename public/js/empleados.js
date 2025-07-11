@@ -1,6 +1,7 @@
 // Variable global para almacenar empleados
 const API_BASE_URL = 'http://127.0.0.1:5041'
 let allEmployees = [];
+const asd = ''
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
@@ -27,20 +28,15 @@ async function fetchEmployees() {
 // Renderizar empleados en la tabla
 function renderEmployees(employees) {
     const tableBody = document.getElementById('cuerpoTablaEmpleados');
-
-    // Limpiar tabla
     tableBody.innerHTML = '';
 
-    // Ocultar mensaje "No hay empleados" si existe
     const infoAlert = document.querySelector('.alert-info');
     if (infoAlert) {
         infoAlert.style.display = 'none';
     }
 
-    // Mostrar cada empleado
     employees.forEach((employee, index) => {
         const row = document.createElement('tr');
-
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>${employee.nombre || ''} ${employee.apellido || ''}</td>
@@ -58,26 +54,12 @@ function renderEmployees(employees) {
                 </button>
             </td>
         `;
-
         tableBody.appendChild(row);
     });
 
-    // Configurar eventos para los botones
-    setupEventListeners();
+    setupEventListeners(); // Configurar eventos después de renderizar
 }
 
-// Configurar eventos para los botones
-function setupEventListeners() {
-    // Botones de ver detalles
-    document.querySelectorAll('.btn-view').forEach(button => {
-        button.addEventListener('click', function() {
-            const employeeCedula = this.getAttribute('data-id');
-            showEmployeeDetails(employeeCedula);
-        });
-    });
-
-    // Botones de editar y eliminar pueden agregarse aquí
-}
 
 async function showEmployeeDetails(cedula) {
     try {
@@ -279,6 +261,16 @@ function setupEventListeners() {
         e.preventDefault();
         updateEmployee();
     });
+
+        // Botones de eliminar
+    document.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', function() {
+            const employeeCedula = this.getAttribute('data-id');
+            confirmDelete(employeeCedula);
+
+        });
+    });
+
 }
 
 // Preparar formulario de edición con datos del empleado
@@ -366,6 +358,60 @@ async function updateEmployee() {
         // Restaurar botón
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;
+    }
+}
+
+// Función para confirmar eliminación
+async function confirmDelete(cedula) {
+    // Mostrar confirmación (puedes usar SweetAlert o confirm nativo)
+    const isConfirmed = confirm(`¿Estás seguro de eliminar al empleado con cédula ${cedula}?`);
+console.log(isConfirmed);
+    if (!isConfirmed) return;
+    deleteEmployee(cedula);
+
+}
+
+// Función para eliminar empleado
+async function deleteEmployee(cedula) {
+    try {
+        // Obtener el botón de eliminar
+        const deleteBtn = document.querySelector(`.btn-delete[data-id="${cedula}"]`);
+        const originalContent = deleteBtn.innerHTML;
+
+        // Mostrar estado de carga
+        deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        deleteBtn.disabled = true;
+
+        // Enviar solicitud de eliminación
+        const response = await fetch(`${API_BASE_URL}/empleados/delete/${cedula}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        // Mostrar mensaje de éxito
+        showAlert('Empleado eliminado correctamente', 'success');
+
+        // Actualizar la lista de empleados
+        await fetchEmployees();
+
+    } catch (error) {
+        console.error('Error al eliminar empleado:', error);
+        showAlert('Error al eliminar el empleado', 'danger');
+
+        // Restaurar botón
+        const deleteBtn = document.querySelector(`.btn-delete[data-id="${cedula}"]`);
+        if (deleteBtn) {
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.disabled = false;
+        }
     }
 }
 
